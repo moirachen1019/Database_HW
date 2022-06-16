@@ -47,7 +47,7 @@
     if (isset($_POST['Done']))
     {
       $whichOrderDone = $_POST['whichOrderDone'];
-      cancel_one($whichOrderDone);
+      done_one($whichOrderDone);
     }
     if (isset($_POST['DoneAll']))
     {
@@ -59,7 +59,7 @@
         if (isset($_POST[$temp])){
           $arr = explode("n", $temp);
           $whichOrderDone = $arr[1];
-          cancel_one($whichOrderDone);
+          done_one($whichOrderDone);
         }
       }
     }
@@ -87,7 +87,6 @@
       include("connection.php");
       date_default_timezone_set('Asia/Taipei');
       $now = date("Y-m-d H:i:s");
-      $whichOrderCancel = $_POST['whichOrderCancel'];
       $statusChange = "Cancel";
       $stmt_confirm = $conn->prepare("SELECT * FROM orders WHERE OID = :whichOrderCancel");
       $stmt_confirm->execute(array("whichOrderCancel"=>$whichOrderCancel));
@@ -99,32 +98,32 @@
         try
         {
           $conn->beginTransaction();
-          $stmt_select_content = $conn->prepare("SELECT * FROM content WHERE OID =:whichOrderCancel");
-          $stmt_select_content->execute(array("whichOrderCancel"=>$whichOrderCancel));
-          $all_content = $stmt_select_content->fetchAll(PDO::FETCH_ASSOC);
-          foreach($all_content as $content)
-          {
-            $stmt_addMeal = $conn->prepare("UPDATE meal SET quantity = (SELECT quantity FROM meal WHERE ID = :MID) + :add_q WHERE ID = :MID");
-            $stmt_addMeal->execute(array("MID"=>$content['MID'], "add_q"=>$content['quantity']));   
-          }
-          $stmt_cancel = $conn->prepare("UPDATE orders SET status = :statusChange, end = :now WHERE OID = :whichOrderCancel");
-          $stmt_cancel->execute(array("statusChange"=>$statusChange,"now"=>$now, "whichOrderCancel"=>$whichOrderCancel));
-          # 使用者拿回錢
-          $stmt_user_get=$conn->prepare("UPDATE users SET wallet = (SELECT wallet FROM users WHERE Account= :user) + :total WHERE Account= :user");
-          $stmt_user_get->execute(array("user"=>$order_data['user_account'], "total"=>$order_data['total_price']));
-          # 店家退款
-          $stmt_shop_loss=$conn->prepare("UPDATE users SET wallet = (SELECT wallet FROM users WHERE Account= :shop_user) - :total WHERE Account= :shop_user");
-          $stmt_shop_loss->execute(array("shop_user"=>$order_data['shop_account'], "total"=>$order_data['total_price']));
-          # 使用者交易紀錄
-          $action = "Receive";
-          $add = '+'.$order_data['total_price'];
-          $stmt10=$conn->prepare("INSERT into record (owner, action, time, trader, amount_change) values (:user, :action, :now, :shop_name, :add )");
-          $stmt10->execute(array("user"=>$order_data['user_account'], "action"=>$action, "now"=>$now, "shop_name"=>$order_data['shop_name'], "add"=>$add));
-          # 店家交易紀錄
-          $action = "Payment";
-          $sub = '-'.$order_data['total_price'];
-          $stmt10=$conn->prepare("INSERT into record (owner, action, time, trader, amount_change) values (:shop_user, :action, :now, :user, :sub )");
-          $stmt10->execute(array("shop_user"=>$order_data['shop_account'], "action"=>$action, "now"=>$now, "user"=>$order_data['user_account'], "sub"=>$sub));
+            $stmt_select_content = $conn->prepare("SELECT * FROM content WHERE OID =:whichOrderCancel");
+            $stmt_select_content->execute(array("whichOrderCancel"=>$whichOrderCancel));
+            $all_content = $stmt_select_content->fetchAll(PDO::FETCH_ASSOC);
+            foreach($all_content as $content)
+            {
+              $stmt_addMeal = $conn->prepare("UPDATE meal SET quantity = (SELECT quantity FROM meal WHERE ID = :MID) + :add_q WHERE ID = :MID");
+              $stmt_addMeal->execute(array("MID"=>$content['MID'], "add_q"=>$content['quantity']));   
+            }
+            $stmt_cancel = $conn->prepare("UPDATE orders SET status = :statusChange, end = :now WHERE OID = :whichOrderCancel");
+            $stmt_cancel->execute(array("statusChange"=>$statusChange,"now"=>$now, "whichOrderCancel"=>$whichOrderCancel));
+            # 使用者拿回錢
+            $stmt_user_get=$conn->prepare("UPDATE users SET wallet = (SELECT wallet FROM users WHERE Account= :user) + :total WHERE Account= :user");
+            $stmt_user_get->execute(array("user"=>$order_data['user_account'], "total"=>$order_data['total_price']));
+            # 店家退款
+            $stmt_shop_loss=$conn->prepare("UPDATE users SET wallet = (SELECT wallet FROM users WHERE Account= :shop_user) - :total WHERE Account= :shop_user");
+            $stmt_shop_loss->execute(array("shop_user"=>$order_data['shop_account'], "total"=>$order_data['total_price']));
+            # 使用者交易紀錄
+            $action = "Receive";
+            $add = '+'.$order_data['total_price'];
+            $stmt10=$conn->prepare("INSERT into record (owner, action, time, trader, amount_change) values (:user, :action, :now, :shop_name, :add )");
+            $stmt10->execute(array("user"=>$order_data['user_account'], "action"=>$action, "now"=>$now, "shop_name"=>$order_data['shop_name'], "add"=>$add));
+            # 店家交易紀錄
+            $action = "Payment";
+            $sub = '-'.$order_data['total_price'];
+            $stmt10=$conn->prepare("INSERT into record (owner, action, time, trader, amount_change) values (:shop_user, :action, :now, :user, :sub )");
+            $stmt10->execute(array("shop_user"=>$order_data['shop_account'], "action"=>$action, "now"=>$now, "user"=>$order_data['user_account'], "sub"=>$sub));
           $conn->commit();
         }
         catch(Exception $e)
@@ -152,13 +151,11 @@
       include("connection.php");
       date_default_timezone_set('Asia/Taipei');
       $now = date("Y-m-d H:i:s");
-      $whichOrderDone = $_POST['whichOrderDone'];
       $statusChange = "Finished";
       $stmt_confirm = $conn->prepare("SELECT * FROM orders WHERE OID = :whichOrderDone");
       $stmt_confirm->execute(array("whichOrderDone"=>$whichOrderDone));
       $confirm =  $stmt_confirm -> fetch(PDO::FETCH_ASSOC);
       $confirm = $confirm['status'];
-
       if($confirm == "Cancel"){
         echo "<script>alert('顧客已取消訂單，無法完成訂單')</script>";
       }
@@ -301,6 +298,9 @@
                                 <td>
                                   <form method="post">
                                     <?php if($row['status'] == "Not_finish"){ ?>
+                                      <form method="post">
+                                        <input type="hidden" name="whichOrderDone" value="<?php echo $row['OID']?>">
+                                        <input type="submit" class="btn btn-success" name="Done" value="Done">
                                         <input type="hidden" name="whichOrderCancel" value="<?php echo $row['OID']?>">
                                         <input type="submit" class="btn btn-danger" name="Cancel" value="Cancel">
                                     <?php } ?>

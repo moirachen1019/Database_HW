@@ -38,9 +38,6 @@
                                 $stmt = $conn->prepare("SELECT * FROM content WHERE OID = :OID ");
                                 $stmt->execute(array("OID"=>$OID));
                                 $meal_data =  $stmt->fetchAll(PDO::FETCH_ASSOC);
-                                $stmt1 = $conn->prepare("SELECT myFile FROM meal WHERE shopname = :shop_name_menu and mealname = :mealn ");
-                                $stmt1->execute(array("OID"=>$OID));
-                                $meal_data1 =  $stmt1->fetchAll(PDO::FETCH_ASSOC);
                                 $ii = 0;
                                 foreach ($meal_data as $meal){
                                     $test = "yes";
@@ -55,9 +52,6 @@
                                         $test="no";
                                     }
                                     $ii++;
-                                    $sth = $conn->prepare("SELECT myFile FROM content WHERE OID = :OID ");
-                                    $sth->execute(array("OID"=>$OID));
-                                    $result =  $sth->fetchAll(PDO::FETCH_ASSOC);
                             ?>
                                 <tr>
                                     <th scope="row"><?php echo $ii?></th>

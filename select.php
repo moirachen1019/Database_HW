@@ -33,7 +33,7 @@
                 $arr_q = array();
                 $arr_m = array();
                 foreach ($rows as $row){
-                    $quantity = $_POST[$row["mealname"]."q"];
+                    $quantity = $_POST["q".$row["ID"]];
                     $meal = $row["mealname"];
                     if($quantity != 0){
                         array_push($arr_q,$quantity);
@@ -97,9 +97,9 @@
                                     <td><?php echo $count['price']?></td>
                                     <td><?php echo $count['quantity']?></td>
                                     <td>
-                                        <input type="button" value="-" class="qtyminus" field="<?php echo $count['mealname']?>q" />
-                                        <input type="text" name="<?php echo $count['mealname']?>q" value="0" class="qty" style="width: 40px;" />
-                                        <input type="button" value="+" class="qtyplus" field="<?php echo $count['mealname']?>q" />
+                                        <input type="button" value="-" class="qtyminus" field="q<?php echo $count['ID']?>" />
+                                        <input type="text" name="q<?php echo $count['ID']?>" value="0" class="qty" style="width: 40px;" />
+                                        <input type="button" value="+" class="qtyplus" field="q<?php echo $count['ID']?>" />
                                         <input type="hidden" value="<?php echo $shop_name_menu?>" name="recognize">
                                     </td>
                                 </tr>

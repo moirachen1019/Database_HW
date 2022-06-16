@@ -27,7 +27,6 @@
           $stmt = $conn->prepare("UPDATE users SET location = ST_GeomFromText(:point), latitude = :latitude, longitude = :longitude WHERE Account = :Account");
           $stmt->execute(array("Account"=>$Account, "latitude"=>$latitude, "longitude"=>$longitude, ':point' => 'POINT(' .$location. ')'));
           $user_data = check_login($conn);
-
         }
       }
       else{
@@ -47,20 +46,43 @@
     if (isset($_POST['deposit']))
     {
       $extra_money = $_POST['money'];
-      if(preg_match("/^[1-9][0-9]*$/" ,$extra_money)){
-        $stmt = $conn->prepare("UPDATE users SET wallet = :wallet  WHERE Account= :Account");
-        $money = $extra_money + $user_data['wallet'];
-        $stmt->execute(array( "Account"=>$Account, "wallet"=> $money ));
-        $action = "Recharge";
-        $now = date("Y-m-d H:i:s");
-        $add = '+'.$extra_money;
-        $stmt10=$conn->prepare("INSERT into record (owner, action, time, trader, amount_change) values (:user, :action, :now, :user, :add )");
-        $stmt10->execute(array("user"=>$user_data['Account'], "action"=>$action, "now"=>$now, "add"=>$add));
-        $user_data = check_login($conn);
-        echo "<script>alert('儲值成功')</script>";
-      }else{
-        echo "<script>alert('輸入須為正整數')</script>";
+      try{
+        $conn->beginTransaction();  
+          if(preg_match("/^[1-9][0-9]*$/" ,$extra_money)){
+            $stmt = $conn->prepare("UPDATE users SET wallet = :wallet  WHERE Account= :Account");
+            $money = $extra_money + $user_data['wallet'];
+            $stmt->execute(array( "Account"=>$Account, "wallet"=> $money ));
+            $action = "Recharge";
+            date_default_timezone_set('Asia/Taipei');
+            $now = date("Y-m-d H:i:s");
+            $add = '+'.$extra_money;
+            $stmt10=$conn->prepare("INSERT into record (owner, action, time, trader, amount_change) values (:user, :action, :now, :user, :add )");
+            $stmt10->execute(array("user"=>$user_data['Account'], "action"=>$action, "now"=>$now, "add"=>$add));
+            $user_data = check_login($conn);
+            echo "<script>alert('儲值成功')</script>";
+          }else{
+            echo "<script>alert('輸入須為正整數')</script>";
+          }
+        $conn->commit();
       }
+      catch(Exception $e)
+      {
+          if ($conn->inTransaction())
+          $conn->rollBack();
+          $msg=$e->getMessage();
+          echo <<<EOT
+          <!DOCTYPE html>
+          <html>
+              <body>
+              <script>
+              alert("$msg");
+              window.location.replace("index.php");
+              </script>
+              </body>
+          </html>
+          EOT;
+      }
+
       
     }
     $rows = "none";
